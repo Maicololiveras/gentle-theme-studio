@@ -46,3 +46,9 @@ node skills/gentle-theme-studio/scripts/theme.mjs export draft 2 crimson-v2.gent
 ```
 
 Example regions target the wide crimson reading-room illustration. For another image the agent should select new polygons. No third-party Node dependencies or build step.
+
+## Direct a scene in two choices
+
+Ask “What can move in this picture?” The agent inspects the picture, asks which object interests you, and suggests motions for that choice. For example, a rainy window supports distant streaks or wet glass with beads that merge and slide. A portrait can use synchronized blinking with individually traced lids. An image without those subjects gets different suggestions. No model runs during playback.
+
+For a reproducible example use `examples/crimson-immersive.json` with the original 1938 × 811 Crimson Window illustration in the create/export commands above. That recipe is image-specific; the compiler, presets and authoring helpers work with other images. The optional Pillow keyframe packer stores only the selected lid texture; the theme embeds the original background bytes without recompression. Natural-looking blinking requires registered artwork; there is no automatic image segmentation or video synthesis.

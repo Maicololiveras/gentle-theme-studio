@@ -1,3 +1,4 @@
+import {motions,inspectBlink,eyelid,glass} from './motion.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
@@ -9,9 +10,10 @@ const unit=n=>Number.isFinite(n)&&n>=0&&n<=1;
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const names=['name','bg','text','accent','veil','layers'];
 function layer(l){
- keys(l,['id','preset','region','intensity']);
+ keys(l,l.preset==='blink'?['id','preset','guides','paint','intensity']:['id','preset','region','intensity']);
  ok(typeof l.id==='string'&&/^[a-z][a-z0-9-]{0,31}$/.test(l.id),'Invalid layer ID');
- ok(['steam','lamp','leaves','rain'].includes(l.preset)&&unit(l.intensity),'Invalid preset or intensity');
+ ok(Object.values(motions).flat().includes(l.preset)&&unit(l.intensity),'Invalid preset or intensity');
+ if(l.preset==='blink'){inspectBlink(l);return}
  ok(Array.isArray(l.region)&&l.region.length>=3&&l.region.length<=32&&l.region.every(p=>Array.isArray(p)&&p.length===2&&p.every(unit)),'Expected 3–32 normalized polygon points');
  const area=l.region.reduce((a,[x,y],i,p)=>{const [u,v]=p[(i+1)%p.length];return a+x*v-y*u},0);
  ok(Math.abs(area)>1e-7,'Empty polygon');
@@ -34,12 +36,14 @@ function rain(g,t,layers){
  }}
 }
 export function compile(r,bytes,mime){
- validate(r);const effects=[],storms=[];
- for(const {preset,region,intensity:a} of r.layers){if(!a)continue;
+ validate(r);const effects=[],storms=[],glassLayers=[],eyes=[];
+ for(const {preset,region,guides,paint,intensity:a} of r.layers){if(!a)continue;
+ if(preset==='wet-glass'){glassLayers.push({region,intensity:a});continue}
+ if(preset==='blink'){eyes.push({guides,paint,intensity:a});continue}
  if(preset==='rain'){storms.push({region,intensity:a});continue}
  effects.push({region,...(preset==='steam'?{type:'flow',direction:[0,-1],speed:.32,strength:.035*a}:preset==='leaves'?{type:'sway',strength:.003*a,speed:.32,scale:12}:{type:'light',strength:1.2*a})})}
  const {name,bg,text,accent,veil}=r;
- return {name,bg,text,accent,background:{image:'data:'+mime+';base64,'+bytes.toString('base64'),veil,effects,...(storms.length?{sceneCode:'const layers='+JSON.stringify(storms)+'; SCENES.studio={draw(g,t){('+rain.toString()+')(g,t,layers)}};'}:{})}};
+ return {name,bg,text,accent,background:{image:'data:'+mime+';base64,'+bytes.toString('base64'),veil,effects,...([storms,glassLayers,eyes].some(a=>a.length)?{sceneCode:'SCENES.studio={draw(g,t){'+(storms.length?'('+rain.toString()+')(g,t,'+JSON.stringify(storms)+');':'')+[[glass,glassLayers],[eyelid,eyes]].filter(([,a])=>a.length).map(([fn,a])=>'for(const l of '+JSON.stringify(a)+') ('+fn.toString()+')(g,t,l);').join('')+'}};'}:{})}};
 }
 const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const write=(p,data)=>fs.writeFileSync(p,JSON.stringify(data,null,2)+'\n',{flag:'wx'});
@@ -47,6 +51,7 @@ function asset(p){ok(fs.statSync(p).size<=10*1024*1024,'Image exceeds 10 MiB');c
  const m=s.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex'))?'image/png':s[0]===255&&s[1]===216&&s[2]===255?'image/jpeg':s.toString('ascii',0,4)==='RIFF'&&s.toString('ascii',8,12)==='WEBP'?'image/webp':null;
  ok(m,'Expected PNG, JPEG or WebP');return [b,m]}
 export function run(cmd,dir,...args){
+ if(cmd==='suggest'){if(dir && !Object.hasOwn(motions,dir))throw Error('Unknown object type');return JSON.stringify(dir?motions[dir]:motions)}
  const f=n=>{ok(/^[1-9][0-9]{0,5}$/.test(String(n)),'Invalid revision');return path.join(dir,'draft-'+n+'.json')};
  if(cmd==='create'){const [img,recipe]=args,r=validate(read(recipe)),[b]=asset(img);fs.mkdirSync(dir);fs.writeFileSync(path.join(dir,'original'),b,{flag:'wx'});write(f(1),{sha256:hash(b),recipe:r});return f(1)}
  const [rev,arg]=args,d=read(f(rev)),[b,m]=asset(path.join(dir,'original'));ok(hash(b)===d.sha256,'Original image changed');validate(d.recipe);
@@ -55,7 +60,7 @@ export function run(cmd,dir,...args){
  if(patch.layers){ok(obj(patch.layers),'Expected keyed layer edits');for(const [id,edit] of Object.entries(patch.layers)){
  const index=d.recipe.layers.findIndex(l=>l.id===id);
  if(edit===null){ok(index>=0,'Unknown layer '+id);d.recipe.layers.splice(index,1);continue}
- keys(edit,['preset','region','intensity']);const l={...(index>=0?d.recipe.layers[index]:{}),...edit,id};layer(l);if(index>=0)d.recipe.layers[index]=l;else d.recipe.layers.push(l)}}
+ keys(edit,['preset','region','guides','paint','intensity']);const l={...(index>=0?d.recipe.layers[index]:{}),...edit,id};layer(l);if(index>=0)d.recipe.layers[index]=l;else d.recipe.layers.push(l)}}
  validate(d.recipe);const out=f(Number(rev)+1);write(out,d);return out;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){try{console.log(run(...process.argv.slice(2)))}catch(e){console.error(e.message);process.exitCode=1}}
