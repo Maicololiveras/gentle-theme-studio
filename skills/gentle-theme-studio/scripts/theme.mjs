@@ -1,3 +1,4 @@
+import {validateRig,drawRig} from './lid-rig.mjs';
 import {motions,inspectBlink,eyelid,glass} from './motion.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,10 +10,11 @@ const keys=(x,ks)=>ok(obj(x)&&Object.keys(x).every(k=>ks.includes(k)), 'Unexpect
 const unit=n=>Number.isFinite(n)&&n>=0&&n<=1;
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const names=['name','bg','text','accent','veil','layers'];
-function layer(l){
- keys(l,l.preset==='blink'?['id','preset','guides','paint','intensity']:['id','preset','region','intensity']);
+export function layer(l){
+ keys(l,l.preset==='lid-rig'?['id','preset','guides','intensity']:l.preset==='blink'?['id','preset','guides','paint','intensity']:['id','preset','region','intensity']);
  ok(typeof l.id==='string'&&/^[a-z][a-z0-9-]{0,31}$/.test(l.id),'Invalid layer ID');
  ok(Object.values(motions).flat().includes(l.preset)&&unit(l.intensity),'Invalid preset or intensity');
+ if(l.preset==='lid-rig'){validateRig(l);return}
  if(l.preset==='blink'){inspectBlink(l);return}
  ok(Array.isArray(l.region)&&l.region.length>=3&&l.region.length<=32&&l.region.every(p=>Array.isArray(p)&&p.length===2&&p.every(unit)),'Expected 3–32 normalized polygon points');
  const area=l.region.reduce((a,[x,y],i,p)=>{const [u,v]=p[(i+1)%p.length];return a+x*v-y*u},0);
@@ -36,14 +38,15 @@ function rain(g,t,layers){
  }}
 }
 export function compile(r,bytes,mime){
- validate(r);const effects=[],storms=[],glassLayers=[],eyes=[];
+ validate(r);const effects=[],storms=[],glassLayers=[],eyes=[],rigs=[];
  for(const {preset,region,guides,paint,intensity:a} of r.layers){if(!a)continue;
  if(preset==='wet-glass'){glassLayers.push({region,intensity:a});continue}
+ if(preset==='lid-rig'){rigs.push({guides,intensity:a});continue}
  if(preset==='blink'){eyes.push({guides,paint,intensity:a});continue}
  if(preset==='rain'){storms.push({region,intensity:a});continue}
  effects.push({region,...(preset==='steam'?{type:'flow',direction:[0,-1],speed:.32,strength:.035*a}:preset==='leaves'?{type:'sway',strength:.003*a,speed:.32,scale:12}:{type:'light',strength:1.2*a})})}
  const {name,bg,text,accent,veil}=r;
- return {name,bg,text,accent,background:{image:'data:'+mime+';base64,'+bytes.toString('base64'),veil,effects,...([storms,glassLayers,eyes].some(a=>a.length)?{sceneCode:'SCENES.studio={draw(g,t){'+(storms.length?'('+rain.toString()+')(g,t,'+JSON.stringify(storms)+');':'')+[[glass,glassLayers],[eyelid,eyes]].filter(([,a])=>a.length).map(([fn,a])=>'for(const l of '+JSON.stringify(a)+') ('+fn.toString()+')(g,t,l);').join('')+'}};'}:{})}};
+ return {name,bg,text,accent,background:{image:'data:'+mime+';base64,'+bytes.toString('base64'),veil,effects,...([storms,glassLayers,eyes,rigs].some(a=>a.length)?{sceneCode:'SCENES.studio={draw(g,t){'+(storms.length?'('+rain.toString()+')(g,t,'+JSON.stringify(storms)+');':'')+[[glass,glassLayers],[eyelid,eyes],[drawRig,rigs]].filter(([,a])=>a.length).map(([fn,a])=>'for(const l of '+JSON.stringify(a)+') ('+fn.toString()+')(g,t,l);').join('')+'}};'}:{})}};
 }
 const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const write=(p,data)=>fs.writeFileSync(p,JSON.stringify(data,null,2)+'\n',{flag:'wx'});

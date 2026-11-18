@@ -28,3 +28,14 @@ test('scene selection works without a face; textured lids close together and unc
  vm.runInNewContext(compile({...r,layers:[pane]},Buffer.alloc(0),'image/png').background.sceneCode,ctx);
  let strokes=0,drops=0;ctx.SCENES.studio.draw({...g,line(){strokes++},ellipse(){drops++}},4);assert.ok(strokes&&drops);
 });
+import director from './extensions/director.mjs';
+test('agent can author and render a new eye solely from geometry and material colors',async()=>{
+ let tool;director({registerTool(t){tool=t}});const spec={id:'eye',preset:'lid-rig',intensity:1,guides:[[.1,.4,.4,'#ccaa99','#bbaa99','#312021'],[.2,.33,.48,'#eeccaa','#ddaa88','#542013'],[.31,.39,.39,'#ccaa99','#be9988','#312021']]};
+ const {details}=await tool.execute('test',spec);const r=JSON.parse(fs.readFileSync('examples/crimson-procedural.json'));r.layers=[details.layer];
+ const ctx={SCENES:{}};vm.runInNewContext(compile(r,Buffer.from('source'),'image/png').background.sceneCode,ctx);
+ const lines=[],g={image:{x:10,y:20,w:800,h:400},line(...v){lines.push(v)}};
+ for(const t of [0,2.2])ctx.SCENES.studio.draw(g,t);assert.equal(lines.length,0);
+ ctx.SCENES.studio.draw(g,2);assert.ok(lines.length>100);for(const [x,y,X,Y] of lines){assert.equal(x,X);assert.ok(x>=90&&x<=258&&y>=152&&Y<=212)}
+ await assert.rejects(tool.execute('bad',{...spec,paint:['ffffff']}),/Unexpected fields/);
+ assert.throws(()=>compile({...r,layers:[{...spec,guides:spec.guides.toReversed()}]},Buffer.alloc(0),'image/png'),/ordered lid/);
+});
