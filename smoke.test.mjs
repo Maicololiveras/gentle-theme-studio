@@ -53,3 +53,12 @@ test('awakening cues light the eyes in order and preserve protected title space 
  for(let t=0;t<8;t+=.125)for(const [k,x,y,a,b,c,v,w] of draw(r.layers,t)){assert.ok(v>=0&&v<=1);assert.ok((k==='ellipse'?y+b:Math.max(y,b)+w/2)<770)}
  assert.throws(()=>draw([{...eyes[0],cue:[.8,.2]}],0),/cue/);
 });
+import living from './skills/gentle-theme-studio/scripts/living/core.cjs';
+test('living canvas moves source pixels, loops without drift and leaves a protected core exact',()=>{
+ const w=91,h=67,src=Uint8ClampedArray.from({length:w*h*4},(_,i)=>i%4===3?255:(i*23)%241);
+ const z={kind:'turn',x:.5,y:.5,rx:.45,ry:.4,angle:25,strength:1,phase:0,tint:'#33aaca'};
+ const api=living(),rig=api.prepare(src,w,h,[z,{...z,kind:'protect',rx:.08,ry:.08}]);
+ const open=rig.frame(0).slice();const moved=rig.frame(2).slice();assert.notDeepEqual(moved,open);assert.deepEqual(rig.frame(8),open);
+ const j=4*(33*w+45);assert.deepEqual(moved.slice(j,j+4),src.slice(j,j+4));assert.deepEqual(moved.slice(0,4),src.slice(0,4));
+ assert.deepEqual(api.prepare(src,w,h,[]).frame(5),src);assert.throws(()=>api.validate({...z,rx:0}));assert.ok(api.suggest(src,w,h).length);
+});

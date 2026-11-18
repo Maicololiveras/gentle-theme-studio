@@ -70,3 +70,9 @@ This optional review command requires Pillow and Node. It replays the exported r
 The agent can direct a tapered light pulse along existing circuitry, or move feathered light along the edge of a background aura. Both are drawn locally from a normalized path, tint, period and phase. `examples/infinity-coder.json` combines the two on a portrait while keeping its face and typography still. Use your own source image and redraw paths for other artwork.
 
 The Infinity Coder example times two eye glints, collar pulses and shoulder traces on an eight-second clock. Use `cue: [start, end]` (fractions of a cycle) to stage effects without an external timeline.
+
+## Living canvas: animate the pixels of an original picture
+
+Run `node skills/gentle-theme-studio/scripts/living.mjs ORIGINAL.png examples/cyan-amber-living.json new-scene`. Open new-scene/scene.html in a browser. Everything is embedded; playback needs no network, model, video or installation. Compare with the original, adjust intensity, or open the editor to load another PNG/JPEG/WebP, suggest colorful areas or drag your own regions. Save a new HTML to keep that composition. Source bytes are retained; interactive preview resolution is capped at 1280 pixels on the long side.
+
+The renderer samples immutable source pixels with a feathered displacement field. Aura follows local hue and luminance; glow preserves highlight headroom; turn is a shallow 2.5D lateral illusion, not reconstruction of an unseen profile. Protect masks pin selected pixels. The loop is eight seconds. The separate Desktop import uses native flow, sway and light approximations; effects near protected regions may be omitted. The HTML is the reference rendering, not an exact Desktop preview.

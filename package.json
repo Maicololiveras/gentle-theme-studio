@@ -1,1 +1,1 @@
-{"name":"gentle-theme-studio","version":"0.4.0","private":true,"type":"module","keywords":["pi-package"],"engines":{"node":">=20"},"pi":{"skills":["./skills"],"extensions":["./extensions/director.mjs"]},"scripts":{"test":"node --test smoke.test.mjs"}}
+{"name":"gentle-theme-studio","version":"0.5.0","private":true,"type":"module","keywords":["pi-package"],"engines":{"node":">=20"},"pi":{"skills":["./skills"],"extensions":["./extensions/director.mjs"]},"scripts":{"test":"node --test smoke.test.mjs"}}
