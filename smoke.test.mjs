@@ -39,3 +39,8 @@ test('agent can author and render a new eye solely from geometry and material co
  await assert.rejects(tool.execute('bad',{...spec,paint:['ffffff']}),/Unexpected fields/);
  assert.throws(()=>compile({...r,layers:[{...spec,guides:spec.guides.toReversed()}]},Buffer.alloc(0),'image/png'),/ordered lid/);
 });
+test('an explicit closing line stays inside the lid and cannot be partly specified',()=>{
+ const r=JSON.parse(fs.readFileSync('examples/crimson-procedural.json'));const eye=r.layers.find(l=>l.id==='far-eye');
+ for(const bad of [eye.guides.map((g,i)=>i?g:g.slice(0,6)),eye.guides.map(g=>[...g.slice(0,6),g[2]+.01])]){
+ assert.throws(()=>compile({...r,layers:[{...eye,guides:bad}]},Buffer.alloc(0),'image/png'),/ordered lid/)}
+});
