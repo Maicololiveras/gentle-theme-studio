@@ -44,3 +44,12 @@ test('an explicit closing line stays inside the lid and cannot be partly specifi
  for(const bad of [eye.guides.map((g,i)=>i?g:g.slice(0,6)),eye.guides.map(g=>[...g.slice(0,6),g[2]+.01])]){
  assert.throws(()=>compile({...r,layers:[{...eye,guides:bad}]},Buffer.alloc(0),'image/png'),/ordered lid/)}
 });
+test('awakening cues light the eyes in order and preserve protected title space throughout a loop',()=>{
+ const r=JSON.parse(fs.readFileSync('examples/infinity-coder.json'));
+ const draw=(layers,t)=>{const ctx={SCENES:{}};vm.runInNewContext(compile({...r,layers},Buffer.from('x'),'image/png').background.sceneCode,ctx);const calls=[];
+ ctx.SCENES.studio.draw({image:{x:0,y:0,w:819,h:1024},line:(...a)=>calls.push(['line',...a]),ellipse:(...a)=>calls.push(['ellipse',...a])},t);return calls};
+ const eyes=r.layers.filter(l=>l.preset==='eye-glint');assert.ok(draw([eyes[0]],.36).length);assert.equal(draw([eyes[1]],.36).length,0);
+ assert.ok(draw([eyes[1]],1).length);assert.equal(draw(eyes,4).length,0);
+ for(let t=0;t<8;t+=.125)for(const [k,x,y,a,b,c,v,w] of draw(r.layers,t)){assert.ok(v>=0&&v<=1);assert.ok((k==='ellipse'?y+b:Math.max(y,b)+w/2)<770)}
+ assert.throws(()=>draw([{...eyes[0],cue:[.8,.2]}],0),/cue/);
+});

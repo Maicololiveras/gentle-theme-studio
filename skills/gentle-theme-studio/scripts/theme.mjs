@@ -1,3 +1,4 @@
+import {checkEnergy,energy} from './energy.mjs';
 import {validateRig,drawRig} from './lid-rig.mjs';
 import {motions,inspectBlink,eyelid,glass} from './motion.mjs';
 import fs from 'node:fs';
@@ -11,9 +12,10 @@ const unit=n=>Number.isFinite(n)&&n>=0&&n<=1;
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const names=['name','bg','text','accent','veil','layers'];
 export function layer(l){
- keys(l,l.preset==='lid-rig'?['id','preset','guides','intensity']:l.preset==='blink'?['id','preset','guides','paint','intensity']:['id','preset','region','intensity']);
+ keys(l,['trace-pulse','aura-rise','eye-glint'].includes(l.preset)?['id','preset','path','tint','phase','seconds','cue','intensity']:l.preset==='lid-rig'?['id','preset','guides','intensity']:l.preset==='blink'?['id','preset','guides','paint','intensity']:['id','preset','region','intensity']);
  ok(typeof l.id==='string'&&/^[a-z][a-z0-9-]{0,31}$/.test(l.id),'Invalid layer ID');
  ok(Object.values(motions).flat().includes(l.preset)&&unit(l.intensity),'Invalid preset or intensity');
+ if(['trace-pulse','aura-rise','eye-glint'].includes(l.preset)){checkEnergy(l);return}
  if(l.preset==='lid-rig'){validateRig(l);return}
  if(l.preset==='blink'){inspectBlink(l);return}
  ok(Array.isArray(l.region)&&l.region.length>=3&&l.region.length<=32&&l.region.every(p=>Array.isArray(p)&&p.length===2&&p.every(unit)),'Expected 3–32 normalized polygon points');
@@ -38,15 +40,16 @@ function rain(g,t,layers){
  }}
 }
 export function compile(r,bytes,mime){
- validate(r);const effects=[],storms=[],glassLayers=[],eyes=[],rigs=[];
- for(const {preset,region,guides,paint,intensity:a} of r.layers){if(!a)continue;
+ validate(r);const effects=[],storms=[],glassLayers=[],eyes=[],rigs=[],paths=[];
+ for(const l of r.layers){const {preset,region,guides,paint,intensity:a}=l;if(!a)continue;
+ if(['trace-pulse','aura-rise','eye-glint'].includes(preset)){paths.push(l);continue}
  if(preset==='wet-glass'){glassLayers.push({region,intensity:a});continue}
  if(preset==='lid-rig'){rigs.push({guides,intensity:a});continue}
  if(preset==='blink'){eyes.push({guides,paint,intensity:a});continue}
  if(preset==='rain'){storms.push({region,intensity:a});continue}
  effects.push({region,...(preset==='steam'?{type:'flow',direction:[0,-1],speed:.32,strength:.035*a}:preset==='leaves'?{type:'sway',strength:.003*a,speed:.32,scale:12}:{type:'light',strength:1.2*a})})}
  const {name,bg,text,accent,veil}=r;
- return {name,bg,text,accent,background:{image:'data:'+mime+';base64,'+bytes.toString('base64'),veil,effects,...([storms,glassLayers,eyes,rigs].some(a=>a.length)?{sceneCode:'SCENES.studio={draw(g,t){'+(storms.length?'('+rain.toString()+')(g,t,'+JSON.stringify(storms)+');':'')+[[glass,glassLayers],[eyelid,eyes],[drawRig,rigs]].filter(([,a])=>a.length).map(([fn,a])=>'for(const l of '+JSON.stringify(a)+') ('+fn.toString()+')(g,t,l);').join('')+'}};'}:{})}};
+ return {name,bg,text,accent,background:{image:'data:'+mime+';base64,'+bytes.toString('base64'),veil,effects,...([storms,glassLayers,eyes,rigs,paths].some(a=>a.length)?{sceneCode:'SCENES.studio={draw(g,t){'+(storms.length?'('+rain.toString()+')(g,t,'+JSON.stringify(storms)+');':'')+[[glass,glassLayers],[eyelid,eyes],[drawRig,rigs],[energy,paths]].filter(([,a])=>a.length).map(([fn,a])=>'for(const l of '+JSON.stringify(a)+') ('+fn.toString()+')(g,t,l);').join('')+'}};'}:{})}};
 }
 const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const write=(p,data)=>fs.writeFileSync(p,JSON.stringify(data,null,2)+'\n',{flag:'wx'});
@@ -63,7 +66,7 @@ export function run(cmd,dir,...args){
  if(patch.layers){ok(obj(patch.layers),'Expected keyed layer edits');for(const [id,edit] of Object.entries(patch.layers)){
  const index=d.recipe.layers.findIndex(l=>l.id===id);
  if(edit===null){ok(index>=0,'Unknown layer '+id);d.recipe.layers.splice(index,1);continue}
- keys(edit,['preset','region','guides','paint','intensity']);const l={...(index>=0?d.recipe.layers[index]:{}),...edit,id};layer(l);if(index>=0)d.recipe.layers[index]=l;else d.recipe.layers.push(l)}}
+ keys(edit,['path','tint','phase','seconds','cue','preset','region','guides','paint','intensity']);const l={...(index>=0?d.recipe.layers[index]:{}),...edit,id};layer(l);if(index>=0)d.recipe.layers[index]=l;else d.recipe.layers.push(l)}}
  validate(d.recipe);const out=f(Number(rev)+1);write(out,d);return out;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){try{console.log(run(...process.argv.slice(2)))}catch(e){console.error(e.message);process.exitCode=1}}

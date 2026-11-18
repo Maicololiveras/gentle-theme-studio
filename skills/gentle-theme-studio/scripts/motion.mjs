@@ -1,6 +1,6 @@
 // The host model identifies objects from the source image. These are renderer capabilities.
 export const motions = Object.freeze({
-  window:['rain','wet-glass'], eye:['lid-rig','blink'], foliage:['leaves'], vapor:['steam'], light:['lamp']
+  circuit:['trace-pulse'], aura:['aura-rise'], window:['rain','wet-glass'], eye:['eye-glint','lid-rig','blink'], foliage:['leaves'], vapor:['steam'], light:['lamp']
 });
 export function inspectBlink(l){
   if(!Array.isArray(l.guides)||l.guides.length<3||l.guides.length>24) throw Error('Blink needs 3–24 lid guides');

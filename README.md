@@ -64,3 +64,9 @@ python skills/gentle-theme-studio/scripts/lid-frame.py image.png recipe.json clo
 ```
 
 This optional review command requires Pillow and Node. It replays the exported rig geometry and composites only the eye strokes. Playback itself needs neither Python nor a model.
+
+### Path-based energy (0.4)
+
+The agent can direct a tapered light pulse along existing circuitry, or move feathered light along the edge of a background aura. Both are drawn locally from a normalized path, tint, period and phase. `examples/infinity-coder.json` combines the two on a portrait while keeping its face and typography still. Use your own source image and redraw paths for other artwork.
+
+The Infinity Coder example times two eye glints, collar pulses and shoulder traces on an eight-second clock. Use `cue: [start, end]` (fractions of a cycle) to stage effects without an external timeline.

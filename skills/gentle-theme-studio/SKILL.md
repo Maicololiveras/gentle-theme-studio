@@ -29,3 +29,7 @@ For new scenes use the registered theme_motion_layer tool to validate and return
 For a full-resolution, closed-eye review run `python scripts/lid-frame.py ORIGINAL RECIPE NEW.png`. This uses the procedural renderer and Pillow only. Inspect the crop; if skin or lashes look wrong, adjust sampled colors or guides, not the whole picture.
 
 If the closed eye looks like a flat patch or the lash bends the wrong way, trace the visible corners and keep the hair outside the fill. Supply a seventh coordinate, closedY, on every guide of that eye. Keep it between upperY and lowerY. Match the closing line to that eye's perspective rather than mirroring the other eye.
+
+For visible circuit tracks, veins of light, or luminous edges suggest trace-pulse: follow the source centerline in travel order. For a drifting halo suggest aura-rise: route from bottom to top inside visible background energy. Both use path (2–48 normalized points), tint (hex from the source), phase (0–1 cycle offset), seconds (1–60 per cycle), and intensity. Allow margin for the halo's feathered footprint near faces, text and occluders. Match periods for a seamless loop; offset phases to avoid synchronous flashing.
+
+For an awakening sequence use eye-glint on the bright part of each eye, then trace-pulse down the collar and out toward the shoulders. Place effects on the same seconds/phase clock with optional cue: [start,end] (fractions of one cycle). Offset the second eye slightly. Keep visible text outside all paths and halo margins.
